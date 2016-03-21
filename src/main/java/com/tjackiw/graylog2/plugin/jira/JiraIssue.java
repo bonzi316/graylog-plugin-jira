@@ -54,21 +54,24 @@ public class JiraIssue {
         JSONObject issuetype = new JSONObject();
         issuetype.put("name", issueType);
 
-        JSONObject level = new JSONObject();
-        level.put("name", priority);
-
+        //Only include label if we have some.  Otherwise it will fail
         JSONArray labelList = new JSONArray();
         String[] labelArr = labels.split("\\,");
         for (String s : labelArr) {
-            labelList.add(s);
+        	if ( s != "") {
+        		labelList.add(s);
+        	}
         }
 
+        //Only include component if we have some.  Otherwise it will fail
         JSONArray componentList = new JSONArray();
         String[] compArr = components.split("\\,");
         for (String s : compArr) {
-            JSONObject hash = new JSONObject();
-            hash.put("name", s);
-            componentList.add(hash);
+        	if ( s != "" ) {
+	            JSONObject hash = new JSONObject();
+	            hash.put("name", s);
+	            componentList.add(hash);
+        	}
         }
 
         JSONObject obj = new JSONObject();
@@ -76,9 +79,22 @@ public class JiraIssue {
         obj.put("description", description);
         obj.put("project", project);
         obj.put("issuetype", issuetype);
-        obj.put("labels", labelList);
-        obj.put("components", componentList);
-        obj.put("priority", level);
+        
+        //Only add label to the JSON object if we have some
+        if (labelList.size() > 0 ) {
+        	obj.put("labels", labelList);
+        }
+        //Only add component to the JSON object if we have some
+        if (componentList.size() > 0 ) {
+        	obj.put("components", componentList);
+        }
+        
+        JSONObject level = new JSONObject();
+        //Only add priority if set
+        if ( priority != "" ) {
+            level.put("name", priority);
+        	obj.put("priority", level);
+        }
 
         JSONObject fields = new JSONObject();
         fields.put("fields", obj);
