@@ -3,7 +3,7 @@
 
     <groupId>org.graylog.plugins</groupId>
     <artifactId>graylog-plugin-jira</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <name>graylog-plugin-jira</name>
@@ -14,7 +14,7 @@
         <connection>scm:git:git@github.com:tjackiw/graylog-plugin-jira.git</connection>
         <developerConnection>scm:git:git@github.com:tjackiw/graylog-plugin-jira.git</developerConnection>
         <url>https://github.com/tjackiw/graylog-plugin-jira</url>
-        <tag>v1.0.0</tag>
+        <tag>v1.0.1</tag>
     </scm>
 
     <properties>
@@ -22,7 +22,7 @@
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <graylog2.plugin-dir>/usr/share/graylog-server/plugin</graylog2.plugin-dir>
-        <graylog2.version>1.0.0</graylog2.version>
+        <graylog2.version>1.3.3</graylog2.version>
     </properties>
 
     <licenses>
