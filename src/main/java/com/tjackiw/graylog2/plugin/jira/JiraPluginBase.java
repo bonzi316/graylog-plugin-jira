@@ -34,11 +34,25 @@ import org.graylog2.plugin.configuration.fields.ConfigurationField;
 import org.graylog2.plugin.configuration.fields.TextField;
 import org.graylog2.plugin.streams.Stream;
 import org.graylog2.plugin.streams.StreamRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.graylog2.plugin.Message; 
+import org.graylog2.plugin.MessageSummary;
+
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
+
+import com.google.common.collect.Lists;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+
 public class JiraPluginBase {
+    private static final Logger LOG = LoggerFactory.getLogger(JiraClient.class);
+
 
     public static final String CK_LABELS = "labels";
     public static final String CK_USERNAME = "username";
@@ -70,7 +84,7 @@ public class JiraPluginBase {
                 ConfigurationField.Optional.NOT_OPTIONAL)
         );
         configurationRequest.addField(new TextField(
-                CK_ISSUE_TYPE, "Issue Type", "Bug", "Type of issue.",
+                CK_ISSUE_TYPE, "Issue Type", "", "Type of issue.",
                 ConfigurationField.Optional.NOT_OPTIONAL)
         );
         configurationRequest.addField(new TextField(
@@ -79,11 +93,11 @@ public class JiraPluginBase {
                 ConfigurationField.Optional.NOT_OPTIONAL)
         );
         configurationRequest.addField(new TextField(
-                CK_PRIORITY, "Issue Priority", "P1", "Priority of the issue.",
+                CK_PRIORITY, "Issue Priority", "", "Priority of the issue.",
                 ConfigurationField.Optional.OPTIONAL)
         );
         configurationRequest.addField(new TextField(
-                CK_LABELS, "Labels", "graylog", "List of comma-separated labels to add to this issue.",
+                CK_LABELS, "Labels", "", "List of comma-separated labels to add to this issue.",
                 ConfigurationField.Optional.OPTIONAL)
         );
         configurationRequest.addField(new TextField(
@@ -160,9 +174,39 @@ public class JiraPluginBase {
         return sb.toString();
     }
 
+    /*
+     *  Add a function the extract all message related to this alarm
+     *  This function came from the email alertcallback Class
+     */
+    protected List<Message> getAlarmBacklog(AlertCondition.CheckResult result) {
+        final AlertCondition alertCondition = result.getTriggeredCondition();
+        final List<MessageSummary> matchingMessages = result.getMatchingMessages();
+
+        final int effectiveBacklogSize = Math.min(alertCondition.getBacklog(), matchingMessages.size());
+
+        if (effectiveBacklogSize == 0) {
+        	LOG.info("[JIRA] - Return an empty list of message.  Maybe you forget to add last message in the alert condition");
+            return Collections.emptyList();
+        }
+
+        final List<MessageSummary> backlogSummaries = matchingMessages.subList(0, effectiveBacklogSize);
+
+        final List<Message> backlog = Lists.newArrayListWithCapacity(effectiveBacklogSize);
+
+        for (MessageSummary messageSummary : backlogSummaries) {
+            backlog.add(messageSummary.getRawMessage());
+        }
+
+        return backlog;
+    }
+
+
     protected String buildDescription(Stream stream, AlertCondition.CheckResult checkResult, Configuration configuration) {
         StringBuilder sb = new StringBuilder();
 
+        // Get all the message from this alert
+        final List<Message> backlog = getAlarmBacklog(checkResult);
+        
         sb.append(checkResult.getResultDescription());
         sb.append("\n\n");
         sb.append("*Date:* ").append("\n").append(Tools.iso8601().toString()).append("\n\n");
@@ -172,6 +216,13 @@ public class JiraPluginBase {
         sb.append("*Stream rules:* ").append("\n").append(buildStreamRules(stream)).append("\n\n");
         sb.append("*Alert triggered at:* ").append("\n").append(checkResult.getTriggeredAt()).append("\n\n");
         sb.append("*Triggered condition:* ").append("\n").append(checkResult.getTriggeredCondition()).append("\n\n");
+        
+        //Add the alert to the description
+        sb.append("*Triggered Message:* ").append("\n");
+        for (Message msg : backlog){
+        	sb.append("- ").append(msg.getField("message").toString()).append("\n");
+        }
+        sb.append("\n\n");
 
         return sb.toString();
     }
